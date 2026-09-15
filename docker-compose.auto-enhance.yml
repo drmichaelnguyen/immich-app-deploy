@@ -1,0 +1,13 @@
+services:
+  immich-server:
+    image: immich-server:auto-enhance
+    build:
+      context: /Users/mikeserver/immich-src
+      dockerfile: server/Dockerfile
+      args:
+        BUILD_ID: local-auto-enhance
+        BUILD_IMAGE: immich-server:auto-enhance
+        BUILD_SOURCE_REF: local
+        BUILD_SOURCE_COMMIT: local
+    environment:
+      IMMICH_AUTO_ENHANCE: "true"

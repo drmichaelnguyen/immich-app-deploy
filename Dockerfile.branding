@@ -1,0 +1,13 @@
+# Custom web branding overlay on the official Immich server image.
+# Build web on the host first:
+#   cd /Users/mikeserver/immich-src && pnpm install && pnpm --filter @immich/sdk --filter immich-web build
+# Then:
+#   cd /Users/mikeserver/immich-app
+#   docker compose -f docker-compose.yml -f docker-compose.branding.yml build immich-server
+#   docker compose -f docker-compose.yml -f docker-compose.branding.yml up -d immich-server
+
+ARG IMMICH_DONOR_IMAGE=ghcr.io/immich-app/immich-server:v3
+
+FROM ${IMMICH_DONOR_IMAGE}
+COPY ./www-build /build/www
+ 

@@ -1,0 +1,61 @@
+# Patched Immich server + web. Build web on the host first (avoids Docker OOM during vite):
+#
+#   cd /Users/mikeserver/immich-src
+#   pnpm install
+#   pnpm --filter @immich/sdk --filter immich-web build
+#
+# Then:
+#   cd /Users/mikeserver/immich-app
+#   docker compose -f docker-compose.yml -f docker-compose.video-rotate.yml build immich-server
+
+ARG IMMICH_DONOR_IMAGE=ghcr.io/immich-app/immich-server:v3
+
+FROM ghcr.io/immich-app/base-server-dev:202604141125@sha256:9338c216fb0fef4172cf53cd8e4ff607c6635d576dcc1366151f13d69bbb45ef AS builder
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+  CI=1 \
+  COREPACK_HOME=/tmp \
+  PNPM_HOME=/buildcache/pnpm-store \
+  PATH="/buildcache/pnpm-store:$PATH"
+
+RUN npm install --global corepack@latest && \
+  corepack enable pnpm && \
+  pnpm config set store-dir "$PNPM_HOME"
+
+FROM builder AS server
+WORKDIR /usr/src/app
+COPY ./server ./server/
+RUN --mount=type=cache,id=pnpm-server,target=/buildcache/pnpm-store \
+  --mount=type=bind,source=package.json,target=package.json \
+  --mount=type=bind,source=.pnpmfile.cjs,target=.pnpmfile.cjs \
+  --mount=type=bind,source=pnpm-lock.yaml,target=pnpm-lock.yaml \
+  --mount=type=bind,source=pnpm-workspace.yaml,target=pnpm-workspace.yaml \
+  SHARP_IGNORE_GLOBAL_LIBVIPS=true pnpm --filter immich --frozen-lockfile build && \
+  SHARP_FORCE_GLOBAL_LIBVIPS=true pnpm --filter immich --frozen-lockfile --prod --no-optional deploy /output/server-pruned
+
+FROM ${IMMICH_DONOR_IMAGE} AS donor
+
+FROM ghcr.io/immich-app/base-server-prod:202604141125@sha256:3b05219afcda09cebfb8513743fc92cec1a3ae262249bfe0de6f90da21326991
+
+WORKDIR /usr/src/app
+ENV NODE_ENV=production \
+  NVIDIA_DRIVER_CAPABILITIES=all \
+  NVIDIA_VISIBLE_DEVICES=all
+
+COPY --from=server /output/server-pruned ./server
+COPY ./web/build /build/www
+COPY --from=donor /usr/src/app/cli ./cli
+COPY --from=donor /build/corePlugin /build/corePlugin
+RUN ln -sf ../../cli/bin/immich server/bin/immich
+COPY LICENSE /licenses/LICENSE.txt
+COPY LICENSE /LICENSE
+
+ENV PATH="${PATH}:/usr/src/app/server/bin"
+
+ARG BUILD_ID=video-rotate-local
+ENV IMMICH_BUILD=${BUILD_ID}
+
+VOLUME /data
+EXPOSE 2283
+ENTRYPOINT ["tini", "--", "/bin/bash", "-c"]
+CMD ["start.sh"]
+HEALTHCHECK CMD immich-healthcheck

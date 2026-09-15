@@ -1,0 +1,20 @@
+# Michael's Gallery: overlay custom server dist + branded web on official Immich image.
+# Host build compiles TypeScript only; node_modules come from the donor image.
+
+ARG IMMICH_DONOR_IMAGE=ghcr.io/immich-app/immich-server:v3
+
+FROM ${IMMICH_DONOR_IMAGE}
+
+WORKDIR /usr/src/app
+
+COPY ./server-dist ./server/dist
+COPY ./www-build /build/www
+
+ARG BUILD_ID=gallery-local
+ENV IMMICH_BUILD=${BUILD_ID}
+
+VOLUME /data
+EXPOSE 2283
+ENTRYPOINT ["tini", "--", "/bin/bash", "-c"]
+CMD ["start.sh"]
+HEALTHCHECK CMD immich-healthcheck

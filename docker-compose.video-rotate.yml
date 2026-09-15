@@ -1,0 +1,20 @@
+# Video rotation build (server + prebuilt web on host — avoids Docker OOM).
+#
+# 1) Build web on the Mac (needs Node 22+ and ~4–6 GB free RAM):
+#      cd /Users/mikeserver/immich-src && pnpm install && pnpm --filter @immich/sdk --filter immich-web build
+# 2) Build and run:
+#      cd /Users/mikeserver/immich-app
+#      docker compose -f docker-compose.yml -f docker-compose.video-rotate.yml build immich-server
+#      docker compose -f docker-compose.yml -f docker-compose.video-rotate.yml up -d immich-server
+#
+# If the full in-Docker build is preferred instead, raise Docker Desktop memory to 12 GB+
+# and use dockerfile: server/Dockerfile in the build section below.
+
+services:
+  immich-server:
+    image: immich-server-video-rotate:local
+    build:
+      context: ${IMMICH_SRC:-/Users/mikeserver/immich-src}
+      dockerfile: ${IMMICH_VIDEO_ROTATE_DOCKERFILE:-/Users/mikeserver/immich-app/Dockerfile.video-rotate}
+      args:
+        BUILD_ID: video-rotate-local

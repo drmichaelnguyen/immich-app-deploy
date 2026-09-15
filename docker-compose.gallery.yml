@@ -1,0 +1,10 @@
+services:
+  immich-server:
+    image: immich-server-gallery:local
+    build:
+      context: /Users/mikeserver/immich-app
+      dockerfile: /Users/mikeserver/immich-app/Dockerfile.gallery
+      additional_contexts:
+        src: /Users/mikeserver/immich-v300-branding
+      args:
+        IMMICH_DONOR_IMAGE: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-v3}

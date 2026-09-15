@@ -1,0 +1,4 @@
+.env
+www-build/
+server-dist/
+.DS_Store

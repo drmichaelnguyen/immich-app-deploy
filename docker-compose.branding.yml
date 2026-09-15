@@ -1,0 +1,8 @@
+services:
+  immich-server:
+    image: immich-server-branding:local
+    build:
+      context: /Users/mikeserver/immich-app
+      dockerfile: Dockerfile.branding
+      args:
+        IMMICH_DONOR_IMAGE: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-v3}
