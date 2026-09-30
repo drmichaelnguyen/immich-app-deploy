@@ -7,6 +7,7 @@ FROM ${IMMICH_DONOR_IMAGE}
 
 WORKDIR /usr/src/app
 
+RUN rm -rf ./server/dist /build/www
 COPY ./server-dist ./server/dist
 COPY ./www-build /build/www
 
